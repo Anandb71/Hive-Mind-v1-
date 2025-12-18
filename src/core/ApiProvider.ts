@@ -369,4 +369,208 @@ export class GeminiProvider extends ApiProvider {
 	}
 }
 
+/**
+ * DeepSeek API Provider
+ */
+export class DeepSeekProvider extends ApiProvider {
+	name = 'DeepSeek';
+	models = ['deepseek-chat', 'deepseek-coder'];
+	private apiKey: string;
+	private baseUrl = 'https://api.deepseek.com/v1';
+
+	constructor(apiKey: string) {
+		super();
+		this.apiKey = apiKey;
+	}
+
+	async complete(options: ChatCompletionOptions): Promise<ChatCompletionResponse> {
+		const response = await fetch(`${this.baseUrl}/chat/completions`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${this.apiKey}`
+			},
+			body: JSON.stringify({
+				model: options.model,
+				messages: options.messages,
+				max_tokens: options.maxTokens,
+				temperature: options.temperature
+			})
+		});
+
+		const data = await response.json();
+
+		return {
+			content: data.choices[0].message.content,
+			usage: {
+				promptTokens: data.usage.prompt_tokens,
+				completionTokens: data.usage.completion_tokens,
+				totalTokens: data.usage.total_tokens
+			},
+			cost: this.calculateCost(options.model, data.usage.prompt_tokens, data.usage.completion_tokens)
+		};
+	}
+
+	async *stream(options: ChatCompletionOptions): AsyncGenerator<StreamChunk> {
+		const response = await fetch(`${this.baseUrl}/chat/completions`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${this.apiKey}`
+			},
+			body: JSON.stringify({
+				model: options.model,
+				messages: options.messages,
+				max_tokens: options.maxTokens,
+				temperature: options.temperature,
+				stream: true
+			})
+		});
+
+		const reader = response.body?.getReader();
+		if (!reader) { return; }
+
+		const decoder = new TextDecoder();
+		let buffer = '';
+
+		while (true) {
+			const { done, value } = await reader.read();
+			if (done) { break; }
+
+			buffer += decoder.decode(value, { stream: true });
+			const lines = buffer.split('\n');
+			buffer = lines.pop() || '';
+
+			for (const line of lines) {
+				if (line.startsWith('data: ')) {
+					const data = line.slice(6);
+					if (data === '[DONE]') {
+						yield { content: '', done: true };
+						return;
+					}
+					try {
+						const parsed = JSON.parse(data);
+						const content = parsed.choices[0].delta.content || '';
+						yield { content, done: false };
+					} catch {
+						// Skip invalid JSON
+					}
+				}
+			}
+		}
+	}
+
+	protected calculateCost(model: string, promptTokens: number, completionTokens: number): number {
+		const pricing: Record<string, { input: number; output: number }> = {
+			'deepseek-chat': { input: 0.00014, output: 0.00028 },
+			'deepseek-coder': { input: 0.00014, output: 0.00028 }
+		};
+		const price = pricing[model] || { input: 0, output: 0 };
+		return (promptTokens / 1000 * price.input) + (completionTokens / 1000 * price.output);
+	}
+}
+
+/**
+ * Mistral API Provider
+ */
+export class MistralProvider extends ApiProvider {
+	name = 'Mistral';
+	models = ['mistral-large-latest', 'mistral-small-latest', 'codestral-latest'];
+	private apiKey: string;
+	private baseUrl = 'https://api.mistral.ai/v1';
+
+	constructor(apiKey: string) {
+		super();
+		this.apiKey = apiKey;
+	}
+
+	async complete(options: ChatCompletionOptions): Promise<ChatCompletionResponse> {
+		const response = await fetch(`${this.baseUrl}/chat/completions`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${this.apiKey}`
+			},
+			body: JSON.stringify({
+				model: options.model,
+				messages: options.messages,
+				max_tokens: options.maxTokens,
+				temperature: options.temperature
+			})
+		});
+
+		const data = await response.json();
+
+		return {
+			content: data.choices[0].message.content,
+			usage: {
+				promptTokens: data.usage.prompt_tokens,
+				completionTokens: data.usage.completion_tokens,
+				totalTokens: data.usage.total_tokens
+			},
+			cost: this.calculateCost(options.model, data.usage.prompt_tokens, data.usage.completion_tokens)
+		};
+	}
+
+	async *stream(options: ChatCompletionOptions): AsyncGenerator<StreamChunk> {
+		const response = await fetch(`${this.baseUrl}/chat/completions`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${this.apiKey}`
+			},
+			body: JSON.stringify({
+				model: options.model,
+				messages: options.messages,
+				max_tokens: options.maxTokens,
+				temperature: options.temperature,
+				stream: true
+			})
+		});
+
+		const reader = response.body?.getReader();
+		if (!reader) { return; }
+
+		const decoder = new TextDecoder();
+		let buffer = '';
+
+		while (true) {
+			const { done, value } = await reader.read();
+			if (done) { break; }
+
+			buffer += decoder.decode(value, { stream: true });
+			const lines = buffer.split('\n');
+			buffer = lines.pop() || '';
+
+			for (const line of lines) {
+				if (line.startsWith('data: ')) {
+					const data = line.slice(6);
+					if (data === '[DONE]') {
+						yield { content: '', done: true };
+						return;
+					}
+					try {
+						const parsed = JSON.parse(data);
+						const content = parsed.choices[0].delta.content || '';
+						yield { content, done: false };
+					} catch {
+						// Skip invalid JSON
+					}
+				}
+			}
+		}
+	}
+
+	protected calculateCost(model: string, promptTokens: number, completionTokens: number): number {
+		const pricing: Record<string, { input: number; output: number }> = {
+			'mistral-large-latest': { input: 0.002, output: 0.006 },
+			'mistral-small-latest': { input: 0.0002, output: 0.0006 },
+			'codestral-latest': { input: 0.0002, output: 0.0006 }
+		};
+		const price = pricing[model] || { input: 0, output: 0 };
+		return (promptTokens / 1000 * price.input) + (completionTokens / 1000 * price.output);
+	}
+}
+
 export default ApiProvider;
+
