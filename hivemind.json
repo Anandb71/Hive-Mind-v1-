@@ -1,0 +1,40 @@
+{
+	"name": "HiveMind IDE",
+	"version": "0.1.0-alpha",
+	"codename": "The Hive",
+	"description": "Agentic IDE for collaborative coding - Code is a social, living event",
+	"based_on": "VS Code (Code - OSS)",
+	"features": {
+		"campfire_mode": {
+			"status": "planned",
+			"description": "Real-time multiplayer coding with shared AI brain"
+		},
+		"holodeck": {
+			"status": "planned",
+			"description": "Live simulation sandbox for zero-bug development"
+		},
+		"agent_hub": {
+			"status": "planned",
+			"description": "Society of specialized AI agents"
+		},
+		"clubhouse": {
+			"status": "planned",
+			"description": "Spatial voice chat and gamification"
+		},
+		"time_travel": {
+			"status": "planned",
+			"description": "Debug by rewinding code history"
+		}
+	},
+	"tech_stack": {
+		"core": "Electron + Monaco (VS Code fork)",
+		"sync_engine": "Rust/WASM (Automerge-rs)",
+		"ai_orchestration": "Python (LangGraph)",
+		"frontend_panels": "TypeScript + React"
+	},
+	"development": {
+		"phase": 1,
+		"phase_name": "The Core",
+		"started": "2024-12-16"
+	}
+}

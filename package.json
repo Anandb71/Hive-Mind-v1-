@@ -1,0 +1,33 @@
+{
+	"name": "hivemind-ide",
+	"version": "0.1.0",
+	"description": "HiveMind - The Agentic Multiplayer IDE",
+	"main": "src/index.ts",
+	"type": "module",
+	"scripts": {
+		"build": "tsc",
+		"dev": "tsc --watch",
+		"lint": "eslint src/",
+		"test": "vitest"
+	},
+	"keywords": [
+		"ide",
+		"ai",
+		"agents",
+		"multiplayer",
+		"collaborative",
+		"crdt"
+	],
+	"author": "HiveMind Contributors",
+	"license": "MIT",
+	"devDependencies": {
+		"@types/node": "^22.0.0",
+		"@types/react": "^18.2.0",
+		"@types/react-dom": "^18.2.0",
+		"typescript": "^5.4.0"
+	},
+	"dependencies": {
+		"react": "^18.2.0",
+		"react-dom": "^18.2.0"
+	}
+}
