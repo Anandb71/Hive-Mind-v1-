@@ -1,0 +1,106 @@
+{
+	"name": "hivemind",
+	"displayName": "HiveMind",
+	"description": "Agentic Multiplayer IDE - AI agents that work alongside you",
+	"version": "0.1.0",
+	"publisher": "hivemind-ide",
+	"engines": {
+		"vscode": "^1.85.0"
+	},
+	"categories": [
+		"AI",
+		"Other"
+	],
+	"activationEvents": [
+		"onStartupFinished"
+	],
+	"main": "./out/extension.js",
+	"contributes": {
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "hivemind-container",
+					"title": "HiveMind",
+					"icon": "media/hivemind-icon.svg"
+				}
+			]
+		},
+		"views": {
+			"hivemind-container": [
+				{
+					"type": "webview",
+					"id": "hivemind.missionControl",
+					"name": "Mission Control"
+				},
+				{
+					"type": "webview",
+					"id": "hivemind.agentHub",
+					"name": "Agent Hub"
+				},
+				{
+					"type": "webview",
+					"id": "hivemind.session",
+					"name": "Campfire Session"
+				}
+			]
+		},
+		"commands": [
+			{
+				"command": "hivemind.startSession",
+				"title": "HiveMind: Start Campfire Session"
+			},
+			{
+				"command": "hivemind.joinSession",
+				"title": "HiveMind: Join Session"
+			},
+			{
+				"command": "hivemind.askAgent",
+				"title": "HiveMind: Ask Agent"
+			},
+			{
+				"command": "hivemind.openKeyVault",
+				"title": "HiveMind: Open Key Vault"
+			},
+			{
+				"command": "hivemind.toggleCollaboration",
+				"title": "HiveMind: Toggle Collaboration Mode"
+			}
+		],
+		"configuration": {
+			"title": "HiveMind",
+			"properties": {
+				"hivemind.enableCursors": {
+					"type": "boolean",
+					"default": true,
+					"description": "Show remote collaborator cursors"
+				},
+				"hivemind.enableVoice": {
+					"type": "boolean",
+					"default": false,
+					"description": "Enable spatial voice chat"
+				},
+				"hivemind.defaultBudget": {
+					"type": "number",
+					"default": 5,
+					"description": "Default session budget in USD"
+				}
+			}
+		},
+		"keybindings": [
+			{
+				"command": "hivemind.askAgent",
+				"key": "ctrl+shift+h",
+				"mac": "cmd+shift+h"
+			}
+		]
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -p ./",
+		"watch": "tsc -watch -p ./"
+	},
+	"devDependencies": {
+		"@types/vscode": "^1.85.0",
+		"typescript": "^5.4.0"
+	}
+}
