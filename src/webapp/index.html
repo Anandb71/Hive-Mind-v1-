@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>HiveMind IDE</title>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/editor/editor.main.css">
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+
+		:root {
+			--bg-primary: #0d1117;
+			--bg-secondary: #161b22;
+			--bg-tertiary: #21262d;
+			--border: #30363d;
+			--text-primary: #e6edf3;
+			--text-secondary: #8b949e;
+			--accent: #4ECDC4;
+			--accent-orange: #FF6B6B;
+			--accent-yellow: #FFEAA7;
+		}
+
+		body {
+			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+			background: var(--bg-primary);
+			color: var(--text-primary);
+			height: 100vh;
+			overflow: hidden;
+		}
+
+		.app {
+			display: flex;
+			height: 100vh;
+		}
+
+		/* Activity Bar */
+		.activity-bar {
+			width: 48px;
+			background: var(--bg-secondary);
+			border-right: 1px solid var(--border);
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			padding: 8px 0;
+		}
+
+		.activity-icon {
+			width: 40px;
+			height: 40px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-size: 20px;
+			cursor: pointer;
+			border-radius: 8px;
+			margin-bottom: 4px;
+			opacity: 0.6;
+			transition: all 0.2s;
+		}
+
+		.activity-icon:hover {
+			opacity: 1;
+			background: var(--bg-tertiary);
+		}
+
+		.activity-icon.active {
+			opacity: 1;
+			border-left: 2px solid var(--accent);
+		}
+
+		/* Sidebar */
+		.sidebar {
+			width: 280px;
+			background: var(--bg-secondary);
+			border-right: 1px solid var(--border);
+			display: flex;
+			flex-direction: column;
+		}
+
+		.sidebar-header {
+			padding: 12px 16px;
+			border-bottom: 1px solid var(--border);
+			display: flex;
+			align-items: center;
+			gap: 8px;
+		}
+
+		.sidebar-header h2 {
+			font-size: 12px;
+			text-transform: uppercase;
+			letter-spacing: 1px;
+			color: var(--text-secondary);
+		}
+
+		.sidebar-content {
+			flex: 1;
+			overflow-y: auto;
+			padding: 8px;
+		}
+
+		/* Cards */
+		.card {
+			background: var(--bg-tertiary);
+			border: 1px solid var(--border);
+			border-radius: 8px;
+			padding: 12px;
+			margin-bottom: 8px;
+		}
+
+		.card-title {
+			font-size: 11px;
+			color: var(--text-secondary);
+			text-transform: uppercase;
+			margin-bottom: 8px;
+		}
+
+		.stat-row {
+			display: flex;
+			justify-content: space-between;
+			font-size: 13px;
+			margin: 4px 0;
+		}
+
+		.stat-value {
+			font-weight: 600;
+		}
+
+		.budget-bar {
+			height: 6px;
+			background: var(--border);
+			border-radius: 3px;
+			margin-top: 8px;
+			overflow: hidden;
+		}
+
+		.budget-fill {
+			height: 100%;
+			background: linear-gradient(90deg, var(--accent), #44a08d);
+			border-radius: 3px;
+			transition: width 0.5s;
+		}
+
+		/* Agent Cards */
+		.agent-card {
+			background: var(--bg-tertiary);
+			border: 1px solid var(--border);
+			border-radius: 8px;
+			margin-bottom: 6px;
+			cursor: pointer;
+			transition: all 0.2s;
+		}
+
+		.agent-card:hover {
+			border-color: var(--accent);
+		}
+
+		.agent-card.active {
+			border-color: var(--accent);
+			background: var(--bg-primary);
+		}
+
+		.agent-header {
+			padding: 10px 12px;
+			display: flex;
+			align-items: center;
+			gap: 10px;
+		}
+
+		.agent-emoji {
+			font-size: 22px;
+		}
+
+		.agent-info {
+			flex: 1;
+		}
+
+		.agent-name {
+			font-size: 13px;
+			font-weight: 600;
+		}
+
+		.agent-model {
+			font-size: 11px;
+			color: var(--text-secondary);
+		}
+
+		.agent-status {
+			color: var(--accent);
+			font-size: 10px;
+		}
+
+		.agent-body {
+			padding: 12px;
+			border-top: 1px solid var(--border);
+			display: none;
+		}
+
+		.agent-card.active .agent-body {
+			display: block;
+		}
+
+		.agent-input {
+			width: 100%;
+			padding: 10px;
+			background: var(--bg-primary);
+			border: 1px solid var(--border);
+			border-radius: 6px;
+			color: var(--text-primary);
+			font-size: 13px;
+			margin-bottom: 8px;
+		}
+
+		.agent-input:focus {
+			outline: none;
+			border-color: var(--accent);
+		}
+
+		.agent-response {
+			background: var(--bg-primary);
+			border-radius: 6px;
+			padding: 12px;
+			font-size: 13px;
+			line-height: 1.5;
+			margin-top: 8px;
+			display: none;
+		}
+
+		/* Buttons */
+		.btn {
+			padding: 10px 16px;
+			border: none;
+			border-radius: 6px;
+			cursor: pointer;
+			font-size: 13px;
+			font-weight: 500;
+			transition: all 0.2s;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 6px;
+		}
+
+		.btn-primary {
+			background: linear-gradient(135deg, var(--accent-orange), #ee5a24);
+			color: white;
+			width: 100%;
+		}
+
+		.btn-primary:hover {
+			transform: scale(1.02);
+			box-shadow: 0 4px 15px rgba(238, 90, 36, 0.3);
+		}
+
+		.btn-secondary {
+			background: var(--bg-tertiary);
+			color: var(--text-primary);
+			border: 1px solid var(--border);
+			width: 100%;
+		}
+
+		.btn-secondary:hover {
+			background: var(--border);
+		}
+
+		/* Participants */
+		.participants {
+			display: flex;
+			margin: 8px 0;
+		}
+
+		.participant {
+			width: 28px;
+			height: 28px;
+			border-radius: 50%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			color: white;
+			font-size: 11px;
+			font-weight: 600;
+			border: 2px solid var(--bg-secondary);
+			margin-left: -6px;
+		}
+
+		.participant:first-child {
+			margin-left: 0;
+		}
+
+		/* Main Content */
+		.main {
+			flex: 1;
+			display: flex;
+			flex-direction: column;
+			background: var(--bg-primary);
+		}
+
+		/* Tabs */
+		.tabs {
+			display: flex;
+			background: var(--bg-secondary);
+			border-bottom: 1px solid var(--border);
+		}
+
+		.tab {
+			padding: 10px 16px;
+			font-size: 13px;
+			cursor: pointer;
+			border-right: 1px solid var(--border);
+			display: flex;
+			align-items: center;
+			gap: 6px;
+			color: var(--text-secondary);
+		}
+
+		.tab.active {
+			background: var(--bg-primary);
+			color: var(--text-primary);
+			border-bottom: 1px solid var(--bg-primary);
+			margin-bottom: -1px;
+		}
+
+		.tab-close {
+			opacity: 0;
+			font-size: 14px;
+			padding: 2px;
+		}
+
+		.tab:hover .tab-close {
+			opacity: 0.6;
+		}
+
+		/* Editor */
+		#editor {
+			flex: 1;
+		}
+
+		/* Remote Cursors */
+		.remote-cursor {
+			position: absolute;
+			pointer-events: none;
+			z-index: 100;
+		}
+
+		.cursor-line {
+			width: 2px;
+			height: 18px;
+			animation: blink 1s infinite;
+		}
+
+		.cursor-label {
+			position: absolute;
+			top: -20px;
+			left: 0;
+			padding: 2px 6px;
+			border-radius: 3px;
+			font-size: 10px;
+			color: white;
+			white-space: nowrap;
+		}
+
+		@keyframes blink {
+
+			0%,
+			100% {
+				opacity: 1;
+			}
+
+			50% {
+				opacity: 0.3;
+			}
+		}
+
+		/* Status Bar */
+		.status-bar {
+			height: 24px;
+			background: var(--accent);
+			display: flex;
+			align-items: center;
+			padding: 0 12px;
+			font-size: 12px;
+			color: #000;
+		}
+
+		.status-item {
+			margin-right: 16px;
+			display: flex;
+			align-items: center;
+			gap: 4px;
+		}
+
+		/* Toast */
+		.toast {
+			position: fixed;
+			bottom: 40px;
+			right: 20px;
+			background: var(--bg-tertiary);
+			border: 1px solid var(--border);
+			padding: 12px 20px;
+			border-radius: 8px;
+			font-size: 13px;
+			transform: translateY(100px);
+			opacity: 0;
+			transition: all 0.3s;
+			z-index: 1000;
+		}
+
+		.toast.show {
+			transform: translateY(0);
+			opacity: 1;
+		}
+
+		/* Chat Panel */
+		.chat-panel {
+			position: fixed;
+			bottom: 24px;
+			right: 0;
+			width: 350px;
+			height: 400px;
+			background: var(--bg-secondary);
+			border: 1px solid var(--border);
+			border-radius: 8px 0 0 0;
+			display: none;
+			flex-direction: column;
+		}
+
+		.chat-panel.open {
+			display: flex;
+		}
+
+		.chat-header {
+			padding: 12px;
+			border-bottom: 1px solid var(--border);
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+		}
+
+		.chat-messages {
+			flex: 1;
+			overflow-y: auto;
+			padding: 12px;
+		}
+
+		.chat-message {
+			margin-bottom: 12px;
+		}
+
+		.chat-message .sender {
+			font-size: 11px;
+			color: var(--text-secondary);
+			margin-bottom: 4px;
+		}
+
+		.chat-message .content {
+			background: var(--bg-tertiary);
+			padding: 10px;
+			border-radius: 8px;
+			font-size: 13px;
+		}
+
+		.chat-input-area {
+			padding: 12px;
+			border-top: 1px solid var(--border);
+		}
+
+		.chat-input {
+			width: 100%;
+			padding: 10px;
+			background: var(--bg-primary);
+			border: 1px solid var(--border);
+			border-radius: 6px;
+			color: var(--text-primary);
+			font-size: 13px;
+		}
+
+		/* Loading spinner */
+		.loading {
+			display: inline-block;
+			width: 14px;
+			height: 14px;
+			border: 2px solid var(--text-secondary);
+			border-top-color: var(--accent);
+			border-radius: 50%;
+			animation: spin 0.8s linear infinite;
+		}
+
+		@keyframes spin {
+			to {
+				transform: rotate(360deg);
+			}
+		}
+	</style>
+</head>
+
+<body>
+	<div class="app">
+		<!-- Activity Bar -->
+		<div class="activity-bar">
+			<div class="activity-icon active" onclick="showPanel('agents')" title="Agent Hub">🐝</div>
+			<div class="activity-icon" onclick="showPanel('session')" title="Campfire Session">🔥</div>
+			<div class="activity-icon" onclick="showPanel('files')" title="Files">📁</div>
+			<div class="activity-icon" onclick="showPanel('settings')" title="Settings">⚙️</div>
+		</div>
+
+		<!-- Sidebar -->
+		<div class="sidebar">
+			<div class="sidebar-header">
+				<span style="font-size: 18px">🐝</span>
+				<h2>HiveMind</h2>
+				<span
+					style="margin-left: auto; background: var(--accent); color: #000; padding: 2px 8px; border-radius: 10px; font-size: 10px;">LIVE</span>
+			</div>
+
+			<div class="sidebar-content" id="sidebar-content">
+				<!-- Agent Panel (default) -->
+				<div id="panel-agents">
+					<div class="card">
+						<div class="card-title">Session Budget</div>
+						<div class="stat-row">
+							<span>Remaining</span>
+							<span class="stat-value" id="budget-display">$4.50</span>
+						</div>
+						<div class="budget-bar">
+							<div class="budget-fill" id="budget-bar" style="width: 90%"></div>
+						</div>
+					</div>
+
+					<div class="card-title" style="padding: 8px 4px;">AI Agents (8)</div>
+
+					<div class="agent-card" onclick="toggleAgent(this, 'architect')">
+						<div class="agent-header">
+							<span class="agent-emoji">🏛️</span>
+							<div class="agent-info">
+								<div class="agent-name">The Architect</div>
+								<div class="agent-model">Claude 3.5</div>
+							</div>
+							<span class="agent-status">●</span>
+						</div>
+						<div class="agent-body">
+							<input class="agent-input" placeholder="Ask about code structure..." id="input-architect"
+								onkeypress="handleEnter(event, 'The Architect')">
+							<button class="btn btn-primary" onclick="askAgent(event, 'The Architect', 'architect')">Ask
+								Architect</button>
+							<div class="agent-response" id="response-architect"></div>
+						</div>
+					</div>
+
+					<div class="agent-card" onclick="toggleAgent(this, 'devil')">
+						<div class="agent-header">
+							<span class="agent-emoji">😈</span>
+							<div class="agent-info">
+								<div class="agent-name">Devil's Advocate</div>
+								<div class="agent-model">GPT-4o</div>
+							</div>
+							<span class="agent-status">●</span>
+						</div>
+						<div class="agent-body">
+							<input class="agent-input" placeholder="Challenge my assumptions..." id="input-devil"
+								onkeypress="handleEnter(event, 'Devil\\'s Advocate')">
+							<button class="btn btn-primary"
+								onclick="askAgent(event, 'Devil\\'s Advocate', 'devil')">Challenge Me</button>
+							<div class="agent-response" id="response-devil"></div>
+						</div>
+					</div>
+
+					<div class="agent-card" onclick="toggleAgent(this, 'historian')">
+						<div class="agent-header">
+							<span class="agent-emoji">📚</span>
+							<div class="agent-info">
+								<div class="agent-name">The Historian</div>
+								<div class="agent-model">Gemini Pro</div>
+							</div>
+							<span class="agent-status">●</span>
+						</div>
+						<div class="agent-body">
+							<input class="agent-input" placeholder="Why did we decide to..." id="input-historian">
+							<button class="btn btn-primary"
+								onclick="askAgent(event, 'The Historian', 'historian')">Ask</button>
+							<div class="agent-response" id="response-historian"></div>
+						</div>
+					</div>
+
+					<div class="agent-card" onclick="toggleAgent(this, 'scribe')">
+						<div class="agent-header">
+							<span class="agent-emoji">✍️</span>
+							<div class="agent-info">
+								<div class="agent-name">The Scribe</div>
+								<div class="agent-model">Mistral Large</div>
+							</div>
+							<span class="agent-status">●</span>
+						</div>
+						<div class="agent-body">
+							<input class="agent-input" placeholder="Document this function..." id="input-scribe">
+							<button class="btn btn-primary"
+								onclick="askAgent(event, 'The Scribe', 'scribe')">Document</button>
+							<div class="agent-response" id="response-scribe"></div>
+						</div>
+					</div>
+
+					<div class="agent-card" onclick="toggleAgent(this, 'security')">
+						<div class="agent-header">
+							<span class="agent-emoji">🛡️</span>
+							<div class="agent-info">
+								<div class="agent-name">Security Guard</div>
+								<div class="agent-model">Claude 3.5</div>
+							</div>
+							<span class="agent-status">●</span>
+						</div>
+						<div class="agent-body">
+							<input class="agent-input" placeholder="Scan for vulnerabilities..." id="input-security">
+							<button class="btn btn-primary"
+								onclick="askAgent(event, 'Security Guard', 'security')">Scan</button>
+							<div class="agent-response" id="response-security"></div>
+						</div>
+					</div>
+
+					<div class="agent-card" onclick="toggleAgent(this, 'intern')">
+						<div class="agent-header">
+							<span class="agent-emoji">📝</span>
+							<div class="agent-info">
+								<div class="agent-name">The Intern</div>
+								<div class="agent-model">DeepSeek Coder</div>
+							</div>
+							<span class="agent-status">●</span>
+						</div>
+						<div class="agent-body">
+							<input class="agent-input" placeholder="Generate tests for..." id="input-intern">
+							<button class="btn btn-primary" onclick="askAgent(event, 'The Intern', 'intern')">Generate
+								Tests</button>
+							<div class="agent-response" id="response-intern"></div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Session Panel -->
+				<div id="panel-session" style="display: none;">
+					<div class="card">
+						<div class="card-title">Campfire Session</div>
+						<div class="stat-row">
+							<span>Status</span>
+							<span class="stat-value" style="color: var(--accent)">● Live</span>
+						</div>
+						<div class="stat-row">
+							<span>Session</span>
+							<span class="stat-value">Demo Campfire</span>
+						</div>
+						<div class="stat-row">
+							<span>Duration</span>
+							<span class="stat-value" id="session-time">00:12:34</span>
+						</div>
+					</div>
+
+					<div class="card">
+						<div class="card-title">Participants (3)</div>
+						<div class="participants">
+							<div class="participant" style="background: var(--accent-orange)">Y</div>
+							<div class="participant" style="background: var(--accent)">A</div>
+							<div class="participant" style="background: var(--accent-yellow); color: #000">B</div>
+						</div>
+						<div style="font-size: 12px; color: var(--text-secondary); margin-top: 8px;">
+							You (Host), Alice, Bob
+						</div>
+					</div>
+
+					<button class="btn btn-secondary" onclick="copyInvite()" style="margin-bottom: 8px;">
+						📋 Copy Invite Link
+					</button>
+					<button class="btn btn-secondary" onclick="toggleChat()" style="margin-bottom: 8px;">
+						💬 Open Chat
+					</button>
+					<button class="btn btn-secondary" onclick="showToast('🎤 Voice chat coming soon!')">
+						🎤 Voice Chat
+					</button>
+				</div>
+
+				<!-- Files Panel -->
+				<div id="panel-files" style="display: none;">
+					<div class="card-title" style="padding: 8px 4px;">Project Files</div>
+					<div style="font-size: 13px;">
+						<div style="padding: 6px 8px; cursor: pointer;" onclick="openFile('index.ts')">📄 index.ts</div>
+						<div style="padding: 6px 8px; cursor: pointer;" onclick="openFile('AgentHub.ts')">📄 AgentHub.ts
+						</div>
+						<div style="padding: 6px 8px; cursor: pointer;" onclick="openFile('SyncEngine.ts')">📄
+							SyncEngine.ts</div>
+						<div style="padding: 6px 8px; cursor: pointer;" onclick="openFile('KeyVault.ts')">📄 KeyVault.ts
+						</div>
+					</div>
+				</div>
+
+				<!-- Settings Panel -->
+				<div id="panel-settings" style="display: none;">
+					<div class="card">
+						<div class="card-title">API Keys</div>
+						<div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">
+							Configure your AI provider keys
+						</div>
+						<input class="agent-input" placeholder="OpenAI API Key" style="margin-bottom: 6px;">
+						<input class="agent-input" placeholder="Anthropic API Key" style="margin-bottom: 6px;">
+						<input class="agent-input" placeholder="Google AI Key">
+					</div>
+					<div class="card">
+						<div class="card-title">Preferences</div>
+						<label
+							style="font-size: 13px; display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+							<input type="checkbox" checked> Show remote cursors
+						</label>
+						<label style="font-size: 13px; display: flex; align-items: center; gap: 8px;">
+							<input type="checkbox"> Enable voice chat
+						</label>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Main Editor Area -->
+		<div class="main">
+			<div class="tabs">
+				<div class="tab active">
+					<span>📄</span>
+					AgentHub.ts
+					<span class="tab-close">×</span>
+				</div>
+				<div class="tab">
+					<span>📄</span>
+					SyncEngine.ts
+					<span class="tab-close">×</span>
+				</div>
+			</div>
+
+			<div id="editor"></div>
+
+			<!-- Remote Cursor Overlay -->
+			<div class="remote-cursor" id="cursor-alice" style="left: 450px; top: 280px;">
+				<div class="cursor-line" style="background: var(--accent-orange);"></div>
+				<div class="cursor-label" style="background: var(--accent-orange);">Alice</div>
+			</div>
+			<div class="remote-cursor" id="cursor-bob" style="left: 380px; top: 180px;">
+				<div class="cursor-line" style="background: var(--accent-yellow);"></div>
+				<div class="cursor-label" style="background: var(--accent-yellow); color: #000;">Bob</div>
+			</div>
+
+			<!-- Status Bar -->
+			<div class="status-bar">
+				<div class="status-item">🐝 HiveMind</div>
+				<div class="status-item">🔥 3 collaborators</div>
+				<div class="status-item">TypeScript</div>
+				<div class="status-item" style="margin-left: auto;">Ln 13, Col 24</div>
+			</div>
+		</div>
+
+		<!-- Chat Panel -->
+		<div class="chat-panel" id="chat-panel">
+			<div class="chat-header">
+				<span>💬 Team Chat</span>
+				<span style="cursor: pointer;" onclick="toggleChat()">×</span>
+			</div>
+			<div class="chat-messages" id="chat-messages">
+				<div class="chat-message">
+					<div class="sender">Alice • 2m ago</div>
+					<div class="content">Hey, I'm working on the SyncEngine</div>
+				</div>
+				<div class="chat-message">
+					<div class="sender">Bob • 1m ago</div>
+					<div class="content">Nice! I'll handle the API providers</div>
+				</div>
+			</div>
+			<div class="chat-input-area">
+				<input class="chat-input" placeholder="Type a message..." id="chat-input" onkeypress="sendChat(event)">
+			</div>
+		</div>
+	</div>
+
+	<div class="toast" id="toast"></div>
+
+	<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+	<script>
+		// Monaco Editor Setup
+		require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' } });
+
+		require(['vs/editor/editor.main'], function () {
+			monaco.editor.defineTheme('hivemind-dark', {
+				base: 'vs-dark',
+				inherit: true,
+				rules: [],
+				colors: {
+					'editor.background': '#0d1117',
+					'editor.foreground': '#e6edf3',
+					'editorLineNumber.foreground': '#484f58',
+					'editor.lineHighlightBackground': '#161b22'
+				}
+			});
+
+			window.editor = monaco.editor.create(document.getElementById('editor'), {
+				value: `/**
+ * HiveMind Agent Hub
+ * Orchestrates all AI agents for collaborative coding
+ */
+
+import { Agent, Architect, DevilsAdvocate, Historian } from './agents/Agent';
+import KeyVault from './KeyVault';
+import { ProviderFactory } from './ProviderFactory';
+
+export class AgentHub {
+    private agents: Map<string, Agent> = new Map();
+    private keyVault: KeyVault;
+    private providerFactory: ProviderFactory;
+
+    constructor(keyVault: KeyVault) {
+        this.keyVault = keyVault;
+        this.providerFactory = new ProviderFactory(keyVault);
+        this.initializeAgents();
+    }
+
+    private initializeAgents(): void {
+        // Initialize all 8 AI agents
+        this.agents.set('architect', new Architect());
+        this.agents.set('devil', new DevilsAdvocate());
+        this.agents.set('historian', new Historian());
+        // ... more agents
+    }
+
+    async askAgent(agentId: string, question: string): Promise<string> {
+        const agent = this.agents.get(agentId);
+        if (!agent) throw new Error('Agent not found');
+
+        const provider = this.providerFactory.getProvider(agent.provider);
+        const response = await provider.complete({
+            model: agent.model,
+            messages: [
+                { role: 'system', content: agent.systemPrompt },
+                { role: 'user', content: question }
+            ]
+        });
+
+        this.keyVault.recordSpend(response.cost);
+        return response.content;
+    }
+
+    listAgents(): Agent[] {
+        return Array.from(this.agents.values());
+    }
+}
+
+export default AgentHub;`,
+				language: 'typescript',
+				theme: 'hivemind-dark',
+				fontSize: 14,
+				fontFamily: "'Cascadia Code', 'Fira Code', Consolas, monospace",
+				minimap: { enabled: true },
+				scrollBeyondLastLine: false,
+				renderWhitespace: 'selection',
+				cursorBlinking: 'smooth',
+				smoothScrolling: true
+			});
+		});
+
+		// Panel Navigation
+		function showPanel(panel) {
+			document.querySelectorAll('.activity-icon').forEach(i => i.classList.remove('active'));
+			event.target.classList.add('active');
+
+			document.querySelectorAll('[id^="panel-"]').forEach(p => p.style.display = 'none');
+			document.getElementById('panel-' + panel).style.display = 'block';
+		}
+
+		// Agent Interaction
+		function toggleAgent(el, id) {
+			if (event.target.classList.contains('btn') || event.target.classList.contains('agent-input')) return;
+			document.querySelectorAll('.agent-card').forEach(c => c.classList.remove('active'));
+			el.classList.add('active');
+			setTimeout(() => document.getElementById('input-' + id)?.focus(), 100);
+		}
+
+		function handleEnter(e, agent) {
+			if (e.key === 'Enter') askAgent(e, agent, agent.toLowerCase().replace(/[^a-z]/g, ''));
+		}
+
+		let budget = 4.50;
+
+		async function askAgent(e, agentName, agentId) {
+			e.stopPropagation();
+			const input = document.getElementById('input-' + agentId);
+			const response = document.getElementById('response-' + agentId);
+			const question = input.value;
+
+			if (!question) return;
+
+			response.style.display = 'block';
+			response.innerHTML = '<span class="loading"></span> ' + agentName + ' is thinking...';
+
+			// Simulate API call
+			await new Promise(r => setTimeout(r, 1500 + Math.random() * 1000));
+
+			// Deduct budget
+			const cost = 0.02 + Math.random() * 0.03;
+			budget -= cost;
+			document.getElementById('budget-display').textContent = '$' + budget.toFixed(2);
+			document.getElementById('budget-bar').style.width = (budget / 5 * 100) + '%';
+
+			// Fake response based on agent
+			const responses = {
+				architect: "Based on the current codebase structure, I recommend implementing the Observer pattern for the SyncEngine. This will allow real-time updates to propagate efficiently across all connected clients.",
+				devil: "I see potential edge cases:\n1. What if the WebSocket disconnects mid-sync?\n2. How do you handle conflicting edits from 3+ users?\n3. The CRDT merge could fail silently.",
+				historian: "Looking at the git history, this module was refactored 3 times. The current approach using CRDTs was chosen after evaluating OT (Operational Transform) in commit abc123.",
+				scribe: "/**\n * AgentHub - Central orchestrator for AI agents\n * @class\n * @param {KeyVault} keyVault - Secure key storage\n */",
+				security: "⚠️ Found 2 potential issues:\n1. API keys exposed in client code\n2. No rate limiting on agent requests\n\nRecommend: Move keys to server-side proxy.",
+				intern: "Generated 3 test cases:\n✓ testAgentInitialization\n✓ testAskArchitect\n✓ testBudgetDeduction"
+			};
+
+			response.innerHTML = responses[agentId] || "Response from " + agentName;
+			input.value = '';
+
+			showToast('✅ ' + agentName + ' responded ($' + cost.toFixed(3) + ')');
+		}
+
+		// Utils
+		function copyInvite() {
+			navigator.clipboard?.writeText('https://hivemind.io/join/demo-' + Date.now().toString(36));
+			showToast('📋 Invite link copied!');
+		}
+
+		function toggleChat() {
+			document.getElementById('chat-panel').classList.toggle('open');
+		}
+
+		function sendChat(e) {
+			if (e.key !== 'Enter') return;
+			const input = document.getElementById('chat-input');
+			if (!input.value) return;
+
+			const messages = document.getElementById('chat-messages');
+			messages.innerHTML += `<div class="chat-message"><div class="sender">You • now</div><div class="content">${input.value}</div></div>`;
+			messages.scrollTop = messages.scrollHeight;
+			input.value = '';
+		}
+
+		function showToast(msg) {
+			const toast = document.getElementById('toast');
+			toast.textContent = msg;
+			toast.classList.add('show');
+			setTimeout(() => toast.classList.remove('show'), 2500);
+		}
+
+		// Animate remote cursors
+		setInterval(() => {
+			const alice = document.getElementById('cursor-alice');
+			const bob = document.getElementById('cursor-bob');
+			alice.style.left = (400 + Math.random() * 200) + 'px';
+			alice.style.top = (200 + Math.random() * 200) + 'px';
+			bob.style.left = (350 + Math.random() * 150) + 'px';
+			bob.style.top = (150 + Math.random() * 150) + 'px';
+		}, 4000);
+
+		// Session timer
+		let seconds = 754;
+		setInterval(() => {
+			seconds++;
+			const h = Math.floor(seconds / 3600);
+			const m = Math.floor((seconds % 3600) / 60);
+			const s = seconds % 60;
+			document.getElementById('session-time').textContent =
+				String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+		}, 1000);
+	</script>
+</body>
+
+</html>

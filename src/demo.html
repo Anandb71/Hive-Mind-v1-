@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HiveMind IDE - Demo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1e1e1e;
+            color: #cccccc;
+            min-height: 100vh;
+        }
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+        .sidebar {
+            width: 300px;
+            background: #252526;
+            border-right: 1px solid #3c3c3c;
+            overflow-y: auto;
+        }
+        .main {
+            flex: 1;
+            background: #1e1e1e;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            padding: 12px 16px;
+            background: #252526;
+            border-bottom: 1px solid #3c3c3c;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .header h1 { font-size: 18px; font-weight: 600; }
+        .header .live {
+            background: #4ECDC4;
+            color: #000;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 600;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        .panel {
+            padding: 12px;
+            border-bottom: 1px solid #3c3c3c;
+        }
+        .panel-title {
+            font-size: 11px;
+            color: #888;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .card {
+            background: #2d2d2d;
+            border: 1px solid #3c3c3c;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 8px;
+        }
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            margin: 6px 0;
+        }
+        .stat-value { font-weight: 600; }
+        .budget-bar {
+            height: 4px;
+            background: #3c3c3c;
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        .budget-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4ECDC4, #44a08d);
+            border-radius: 2px;
+            transition: width 0.5s ease;
+        }
+        .btn {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+            margin-top: 8px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #FF6B6B, #ee5a24);
+            color: white;
+        }
+        .btn-primary:hover { transform: scale(1.02); box-shadow: 0 4px 15px rgba(238,90,36,0.4); }
+        .btn-secondary {
+            background: #3c3c3c;
+            color: #ccc;
+        }
+        .btn-secondary:hover { background: #4a4a4a; }
+
+        .agent-card {
+            background: #2d2d2d;
+            border: 1px solid #3c3c3c;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .agent-card:hover { border-color: #4ECDC4; }
+        .agent-card.active { border-color: #4ECDC4; background: #333; }
+        .agent-header {
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .agent-emoji { font-size: 24px; }
+        .agent-info { flex: 1; }
+        .agent-name { font-size: 13px; font-weight: 600; }
+        .agent-desc { font-size: 11px; color: #888; }
+        .agent-status { color: #4ECDC4; font-size: 8px; }
+        .agent-body {
+            padding: 10px;
+            border-top: 1px solid #3c3c3c;
+            display: none;
+        }
+        .agent-card.active .agent-body { display: block; }
+        .agent-input {
+            width: 100%;
+            padding: 8px;
+            background: #1e1e1e;
+            border: 1px solid #3c3c3c;
+            border-radius: 4px;
+            color: #ccc;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+        .agent-input:focus { outline: none; border-color: #4ECDC4; }
+
+        .participants {
+            display: flex;
+            gap: -8px;
+            margin: 10px 0;
+        }
+        .participant {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            border: 2px solid #252526;
+            margin-left: -8px;
+        }
+        .participant:first-child { margin-left: 0; }
+
+        .editor {
+            flex: 1;
+            padding: 20px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            position: relative;
+        }
+        .line { display: flex; }
+        .line-num {
+            width: 40px;
+            color: #5a5a5a;
+            text-align: right;
+            padding-right: 15px;
+            user-select: none;
+        }
+        .line-content { flex: 1; }
+        .keyword { color: #569cd6; }
+        .string { color: #ce9178; }
+        .comment { color: #6a9955; }
+        .function { color: #dcdcaa; }
+        .type { color: #4ec9b0; }
+
+        .remote-cursor {
+            position: absolute;
+            width: 2px;
+            height: 18px;
+            background: #FF6B6B;
+            animation: blink 1s infinite;
+        }
+        .remote-cursor::before {
+            content: 'Alice';
+            position: absolute;
+            top: -18px;
+            left: 0;
+            background: #FF6B6B;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-family: sans-serif;
+            white-space: nowrap;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #4ECDC4;
+            color: #000;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="header">
+                <span style="font-size: 24px">🐝</span>
+                <h1>HiveMind</h1>
+                <span class="live">LIVE</span>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">Session Status</div>
+                <div class="card">
+                    <div class="stat-row">
+                        <span>Status</span>
+                        <span class="stat-value" style="color: #4ECDC4">● Connected</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Session</span>
+                        <span class="stat-value">Demo Campfire</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Participants</span>
+                        <span class="stat-value">3 online</span>
+                    </div>
+                    <div class="participants">
+                        <div class="participant" style="background: #FF6B6B">A</div>
+                        <div class="participant" style="background: #4ECDC4">B</div>
+                        <div class="participant" style="background: #FFEAA7">Y</div>
+                    </div>
+                    <button class="btn btn-secondary" onclick="copyInvite()">📋 Copy Invite Link</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">Budget</div>
+                <div class="card">
+                    <div class="stat-row">
+                        <span>Remaining</span>
+                        <span class="stat-value" id="budget">$4.50</span>
+                    </div>
+                    <div class="budget-bar">
+                        <div class="budget-fill" id="budgetBar" style="width: 90%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">Agent Hub (8 agents)</div>
+                <div class="agent-card" onclick="toggleAgent(this, 'architect')">
+                    <div class="agent-header">
+                        <span class="agent-emoji">🏛️</span>
+                        <div class="agent-info">
+                            <div class="agent-name">The Architect</div>
+                            <div class="agent-desc">Code structure • Claude</div>
+                        </div>
+                        <span class="agent-status">●</span>
+                    </div>
+                    <div class="agent-body">
+                        <input class="agent-input" placeholder="Ask The Architect..." id="input-architect">
+                        <button class="btn btn-primary" onclick="askAgent(event, 'The Architect')">Ask</button>
+                    </div>
+                </div>
+                <div class="agent-card" onclick="toggleAgent(this, 'devil')">
+                    <div class="agent-header">
+                        <span class="agent-emoji">😈</span>
+                        <div class="agent-info">
+                            <div class="agent-name">Devil's Advocate</div>
+                            <div class="agent-desc">Chaos testing • GPT-4o</div>
+                        </div>
+                        <span class="agent-status">●</span>
+                    </div>
+                    <div class="agent-body">
+                        <input class="agent-input" placeholder="Challenge my code..." id="input-devil">
+                        <button class="btn btn-primary" onclick="askAgent(event, 'Devil\\'s Advocate')">Ask</button>
+                    </div>
+                </div>
+                <div class="agent-card" onclick="toggleAgent(this, 'historian')">
+                    <div class="agent-header">
+                        <span class="agent-emoji">📚</span>
+                        <div class="agent-info">
+                            <div class="agent-name">The Historian</div>
+                            <div class="agent-desc">Context memory • Gemini</div>
+                        </div>
+                        <span class="agent-status">●</span>
+                    </div>
+                    <div class="agent-body">
+                        <input class="agent-input" placeholder="Why did we..." id="input-historian">
+                        <button class="btn btn-primary" onclick="askAgent(event, 'The Historian')">Ask</button>
+                    </div>
+                </div>
+                <div class="agent-card" onclick="toggleAgent(this, 'scribe')">
+                    <div class="agent-header">
+                        <span class="agent-emoji">✍️</span>
+                        <div class="agent-info">
+                            <div class="agent-name">The Scribe</div>
+                            <div class="agent-desc">Documentation • Mistral</div>
+                        </div>
+                        <span class="agent-status">●</span>
+                    </div>
+                    <div class="agent-body">
+                        <input class="agent-input" placeholder="Document this..." id="input-scribe">
+                        <button class="btn btn-primary" onclick="askAgent(event, 'The Scribe')">Ask</button>
+                    </div>
+                </div>
+                <div class="agent-card" onclick="toggleAgent(this, 'diplomat')">
+                    <div class="agent-header">
+                        <span class="agent-emoji">🤝</span>
+                        <div class="agent-info">
+                            <div class="agent-name">The Diplomat</div>
+                            <div class="agent-desc">Conflict resolution • DeepSeek</div>
+                        </div>
+                        <span class="agent-status">●</span>
+                    </div>
+                    <div class="agent-body">
+                        <input class="agent-input" placeholder="Resolve merge conflict..." id="input-diplomat">
+                        <button class="btn btn-primary" onclick="askAgent(event, 'The Diplomat')">Ask</button>
+                    </div>
+                </div>
+                <div class="agent-card" onclick="toggleAgent(this, 'designer')">
+                    <div class="agent-header">
+                        <span class="agent-emoji">🎨</span>
+                        <div class="agent-info">
+                            <div class="agent-name">The Designer</div>
+                            <div class="agent-desc">UI preview • Gemini Flash</div>
+                        </div>
+                        <span class="agent-status">●</span>
+                    </div>
+                    <div class="agent-body">
+                        <input class="agent-input" placeholder="Preview component..." id="input-designer">
+                        <button class="btn btn-primary" onclick="askAgent(event, 'The Designer')">Ask</button>
+                    </div>
+                </div>
+                <div class="agent-card" onclick="toggleAgent(this, 'security')">
+                    <div class="agent-header">
+                        <span class="agent-emoji">🛡️</span>
+                        <div class="agent-info">
+                            <div class="agent-name">Security Guard</div>
+                            <div class="agent-desc">Vulnerability scan • Claude</div>
+                        </div>
+                        <span class="agent-status">●</span>
+                    </div>
+                    <div class="agent-body">
+                        <input class="agent-input" placeholder="Scan for vulnerabilities..." id="input-security">
+                        <button class="btn btn-primary" onclick="askAgent(event, 'Security Guard')">Ask</button>
+                    </div>
+                </div>
+                <div class="agent-card" onclick="toggleAgent(this, 'intern')">
+                    <div class="agent-header">
+                        <span class="agent-emoji">📝</span>
+                        <div class="agent-info">
+                            <div class="agent-name">The Intern</div>
+                            <div class="agent-desc">Unit tests • DeepSeek</div>
+                        </div>
+                        <span class="agent-status">●</span>
+                    </div>
+                    <div class="agent-body">
+                        <input class="agent-input" placeholder="Generate tests for..." id="input-intern">
+                        <button class="btn btn-primary" onclick="askAgent(event, 'The Intern')">Ask</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main">
+            <div class="header">
+                <span>📄</span>
+                <span>hivemind/core/AgentHub.ts</span>
+                <span style="margin-left: auto; font-size: 12px; color: #888">TypeScript</span>
+            </div>
+            <div class="editor">
+                <div class="line"><span class="line-num">1</span><span class="line-content"><span class="comment">/**</span></span></div>
+                <div class="line"><span class="line-num">2</span><span class="line-content"><span class="comment"> * HiveMind Agent Hub</span></span></div>
+                <div class="line"><span class="line-num">3</span><span class="line-content"><span class="comment"> * Orchestrates all AI agents</span></span></div>
+                <div class="line"><span class="line-num">4</span><span class="line-content"><span class="comment"> */</span></span></div>
+                <div class="line"><span class="line-num">5</span><span class="line-content"></span></div>
+                <div class="line"><span class="line-num">6</span><span class="line-content"><span class="keyword">import</span> { <span class="type">Agent</span> } <span class="keyword">from</span> <span class="string">'./Agent'</span>;</span></div>
+                <div class="line"><span class="line-num">7</span><span class="line-content"><span class="keyword">import</span> <span class="type">KeyVault</span> <span class="keyword">from</span> <span class="string">'./KeyVault'</span>;</span></div>
+                <div class="line"><span class="line-num">8</span><span class="line-content"></span></div>
+                <div class="line"><span class="line-num">9</span><span class="line-content"><span class="keyword">export class</span> <span class="type">AgentHub</span> {</span></div>
+                <div class="line"><span class="line-num">10</span><span class="line-content">  <span class="keyword">private</span> agents: <span class="type">Map</span>&lt;<span class="type">string</span>, <span class="type">Agent</span>&gt;;</span></div>
+                <div class="line"><span class="line-num">11</span><span class="line-content">  <span class="keyword">private</span> keyVault: <span class="type">KeyVault</span>;</span></div>
+                <div class="line"><span class="line-num">12</span><span class="line-content"></span></div>
+                <div class="line" style="position: relative;"><span class="line-num">13</span><span class="line-content">  <span class="function">constructor</span>(keyVault: <span class="type">KeyVault</span>) {<div class="remote-cursor" style="left: 320px;"></div></span></div>
+                <div class="line"><span class="line-num">14</span><span class="line-content">    <span class="keyword">this</span>.keyVault = keyVault;</span></div>
+                <div class="line"><span class="line-num">15</span><span class="line-content">    <span class="keyword">this</span>.<span class="function">initializeAgents</span>();</span></div>
+                <div class="line"><span class="line-num">16</span><span class="line-content">  }</span></div>
+                <div class="line"><span class="line-num">17</span><span class="line-content"></span></div>
+                <div class="line"><span class="line-num">18</span><span class="line-content">  <span class="keyword">async</span> <span class="function">askArchitect</span>(q: <span class="type">string</span>) {</span></div>
+                <div class="line"><span class="line-num">19</span><span class="line-content">    <span class="keyword">return this</span>.agents.<span class="function">get</span>(<span class="string">'architect'</span>);</span></div>
+                <div class="line"><span class="line-num">20</span><span class="line-content">  }</span></div>
+                <div class="line"><span class="line-num">21</span><span class="line-content">}</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        function toggleAgent(el, id) {
+            if (event.target.classList.contains('btn')) return;
+            document.querySelectorAll('.agent-card').forEach(c => c.classList.remove('active'));
+            el.classList.toggle('active');
+        }
+
+        function askAgent(e, name) {
+            e.stopPropagation();
+            showToast(`🤖 ${name} is thinking...`);
+
+            // Simulate spending budget
+            setTimeout(() => {
+                const budget = document.getElementById('budget');
+                const bar = document.getElementById('budgetBar');
+                const current = parseFloat(budget.textContent.replace('$', ''));
+                const newVal = (current - 0.02).toFixed(2);
+                budget.textContent = '$' + newVal;
+                bar.style.width = (newVal / 5 * 100) + '%';
+
+                showToast(`✅ ${name}: Response received!`);
+            }, 1500);
+        }
+
+        function copyInvite() {
+            showToast('📋 Invite link copied!');
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2500);
+        }
+
+        // Animate remote cursor
+        setInterval(() => {
+            const cursor = document.querySelector('.remote-cursor');
+            if (cursor) {
+                const newLeft = 280 + Math.random() * 100;
+                cursor.style.left = newLeft + 'px';
+            }
+        }, 3000);
+    </script>
+</body>
+</html>
