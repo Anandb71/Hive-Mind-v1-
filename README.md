@@ -1,54 +1,53 @@
-# 🐝 HiveMind IDE
+# HiveMind IDE
 
-**The Agentic Multiplayer IDE** - Real-time collaboration with AI agents that work alongside you.
+Local-First Multiplayer IDE with AI Agents
+
+## Quick Start
+
+```bash
+# Install dependencies
+npm install
+
+# Run development (server + client)
+npm run dev
+
+# Or run the Electron desktop app
+npm run electron:dev
+```
+
+## How It Works
+
+### Host a Session
+
+1. Run `npm run dev`
+2. Click "Host Session"
+3. Share your IP address with collaborators
+
+### Join a Session
+
+1. Get the host's IP (e.g., `192.168.1.x:3001`)
+2. Click "Join Session"
+3. Enter the IP and your name
+
+## Architecture
+
+```
+/hivemind-local
+├── /packages
+│   ├── /client       # React + Vite + Monaco
+│   └── /server       # Node.js + Socket.io + SQLite
+├── /electron         # Desktop wrapper
+└── /projects         # Local project files
+```
 
 ## Features
 
-### 🤖 Agent Hub
-8 specialized AI agents:
-- **The Architect** (Claude) - Code structure & architecture
-- **The Devil's Advocate** (GPT-4o) - Chaos testing & edge cases
-- **The Historian** (Gemini) - Context memory & git history
-- **The Scribe** (Mistral) - Documentation
-- **The Diplomat** (DeepSeek) - Merge conflict resolution
-- **The Designer** (Gemini Flash) - UI preview
-- **The Security Guard** (Claude) - Vulnerability scanning
-- **The Intern** (DeepSeek) - Unit test generation
-
-### 🔥 Campfire Mode
-Real-time multiplayer coding:
-- WebRTC P2P sync
-- Live cursor presence
-- Invite tokens with expiration
-- Voice chat integration hooks
-
-### 💰 Key Vault
-- Bring your own API keys
-- Session budget tracking
-- Encrypted local storage
-
-### 📄 CRDT Sync
-- Conflict-free document editing
-- Rust WASM engine (coming soon)
-- Operation transforms
-
-## Project Structure
-
-```
-src/
-├── agents/          # AI agent implementations
-├── core/            # KeyVault, AgentHub, SessionManager, ApiProviders
-├── sync/            # SyncEngine, P2P, Signaling, CollaborativeSession
-├── ui/              # React components
-└── crdt-engine/     # Rust CRDT module
-```
-
-## Getting Started
-
-```bash
-npm install
-npm run dev
-```
+- 🐝 **6 AI Agents** - Architect, Devil's Advocate, Historian, Scribe, Security, Intern
+- 📝 **Monaco Editor** - Same as VS Code
+- 🔥 **Real-time Collaboration** - Yjs CRDT sync
+- 💬 **Team Chat** - Socket.io based
+- 📁 **Local File System** - No cloud required
+- 💾 **SQLite Database** - API keys, budget, history
 
 ## License
 

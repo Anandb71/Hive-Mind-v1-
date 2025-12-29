@@ -1,33 +1,24 @@
 {
-	"name": "hivemind-ide",
+	"name": "hivemind",
 	"version": "0.1.0",
-	"description": "HiveMind - The Agentic Multiplayer IDE",
-	"main": "src/index.ts",
-	"type": "module",
-	"scripts": {
-		"build": "tsc",
-		"dev": "tsc --watch",
-		"lint": "eslint src/",
-		"test": "vitest"
-	},
-	"keywords": [
-		"ide",
-		"ai",
-		"agents",
-		"multiplayer",
-		"collaborative",
-		"crdt"
+	"description": "HiveMind - Local-First Multiplayer IDE",
+	"private": true,
+	"workspaces": [
+		"packages/*"
 	],
-	"author": "HiveMind Contributors",
-	"license": "MIT",
-	"devDependencies": {
-		"@types/node": "^22.0.0",
-		"@types/react": "^18.2.0",
-		"@types/react-dom": "^18.2.0",
-		"typescript": "^5.4.0"
+	"scripts": {
+		"dev": "concurrently \"npm run server\" \"npm run client\"",
+		"server": "cd packages/server && node index.js",
+		"client": "cd packages/client && vite",
+		"build": "cd packages/client && vite build",
+		"electron": "electron electron/main.js",
+		"electron:dev": "concurrently \"npm run server\" \"npm run client\" \"wait-on http://localhost:5173 && npm run electron\""
 	},
-	"dependencies": {
-		"react": "^18.2.0",
-		"react-dom": "^18.2.0"
+	"devDependencies": {
+		"concurrently": "^8.2.2",
+		"wait-on": "^7.2.0"
+	},
+	"engines": {
+		"node": ">=18"
 	}
 }
