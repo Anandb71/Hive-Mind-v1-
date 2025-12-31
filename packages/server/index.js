@@ -13,6 +13,7 @@ const { initDB, setApiKey, getApiKey, getAllApiKeys, getBudget, recordSpend, res
 const fileRoutes = require('./routes/files');
 const terminalRoutes = require('./routes/terminal');
 const gitRoutes = require('./routes/git');
+const { askAgent, AGENT_CONFIG } = require('./ai/agents');
 
 const PORT = process.env.PORT || 3001;
 const PROJECTS_DIR = path.join(__dirname, '../../projects');
@@ -74,6 +75,29 @@ app.post('/api/budget/spend', (req, res) => {
 	const { amount } = req.body;
 	recordSpend(amount);
 	res.json({ success: true });
+});
+
+// AI Agents
+app.get('/api/ai/agents', (req, res) => {
+	res.json(Object.entries(AGENT_CONFIG).map(([id, config]) => ({
+		id,
+		provider: config.provider,
+		model: config.model
+	})));
+});
+
+app.post('/api/ai/ask/:agentId', async (req, res) => {
+	try {
+		const { question, context, fileContent, fileName } = req.body;
+		const fullContext = fileContent
+			? `File: ${fileName || 'unknown'}\n\`\`\`\n${fileContent}\n\`\`\`\n${context || ''}`
+			: context || '';
+
+		const result = await askAgent(req.params.agentId, question, fullContext);
+		res.json(result);
+	} catch (err) {
+		res.status(400).json({ error: err.message });
+	}
 });
 
 // Session management

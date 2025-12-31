@@ -3,7 +3,7 @@
  * Real API calls to OpenAI, Anthropic, etc.
  */
 
-import { getApiKey, recordSpend } from '../db/sqlite';
+const { getApiKey, recordSpend } = require('../db/sqlite');
 
 const PROVIDERS = {
 	openai: {
