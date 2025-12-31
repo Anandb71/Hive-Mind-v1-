@@ -18,7 +18,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ onToggleTerminal }: SidebarProps) {
-	const { sidebarPanel, setSidebarPanel, files, activeFile, setActiveFile, session, budget, spent, toggleChat, serverUrl } = useStore();
+	const { sidebarPanel, setSidebarPanel, files, activeFile, openTab, session, budget, spent, toggleChat, serverUrl } = useStore();
 	const [activeAgent, setActiveAgent] = useState<string | null>(null);
 	const [agentInput, setAgentInput] = useState('');
 	const [agentResponses, setAgentResponses] = useState<Record<string, string>>({});
@@ -64,7 +64,7 @@ export function Sidebar({ onToggleTerminal }: SidebarProps) {
 				<div
 					className={`file-item ${node.type === 'directory' ? 'directory' : ''} ${activeFile === node.path ? 'active' : ''}`}
 					style={{ paddingLeft: 12 + depth * 12 }}
-					onClick={() => node.type === 'file' && setActiveFile(node.path)}
+					onClick={() => node.type === 'file' && openTab(node.path)}
 				>
 					{node.type === 'directory' ? '📁' : '📄'} {node.name}
 				</div>

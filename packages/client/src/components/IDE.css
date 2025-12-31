@@ -393,10 +393,36 @@
 .tab-close {
 	opacity: 0;
 	font-size: 14px;
+	padding: 2px;
+	border-radius: 4px;
+	background: transparent;
+	border: none;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
 }
 
 .tab:hover .tab-close {
 	opacity: 0.6;
+}
+
+.tab-close:hover {
+	opacity: 1 !important;
+	background: rgba(255, 255, 255, 0.1);
+}
+
+.dirty-dot {
+	color: #f5a623;
+	margin-right: 4px;
+}
+
+.tab-name {
+	display: flex;
+	align-items: center;
+}
+
+.tab-icon {
+	margin-right: 4px;
 }
 
 .editor-content {
