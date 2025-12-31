@@ -1,54 +1,107 @@
-# HiveMind IDE
+# 🐝 HiveMind IDE
 
-Local-First Multiplayer IDE with AI Agents
+**Local-first, collaborative IDE with AI agents for multiplayer coding.**
 
-## Quick Start
+![HiveMind IDE](./screenshot.png)
+
+## ✨ Features
+
+- **🔥 Real-time Collaboration** - Code together with friends via Socket.io & Yjs
+- **🤖 6 AI Agents** - Architect, Devil's Advocate, Historian, Scribe, Security Guard, Intern
+- **📝 Monaco Editor** - Full VSCode-quality editing experience
+- **📂 Multi-Tab Support** - Open multiple files with dirty indicators
+- **💾 Auto-Save** - Debounced auto-save (1 second delay)
+- **🎨 5 Themes** - Dark, Light, Midnight, Forest, Sunset
+- **⌨️ Keyboard Shortcuts** - 15+ configurable shortcuts
+- **🔍 Global Search** - Ctrl+P quick file search
+- **📟 Terminal** - Run/build commands from the IDE
+- **🌿 Git Integration** - Status, commit, push, pull
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Node.js 18+
+- npm or yarn
+
+### Installation
 
 ```bash
-# Install dependencies
+# Clone the repo
+git clone https://github.com/Anandb71/Hive-Mind-v1.git
+cd Hive-Mind-v1
+
+# Install server dependencies
+cd packages/server
 npm install
 
-# Run development (server + client)
+# Install client dependencies
+cd ../client
+npm install
+```
+
+### Running
+
+```bash
+# Terminal 1: Start server
+cd packages/server
+node index.js
+
+# Terminal 2: Start client
+cd packages/client
 npm run dev
-
-# Or run the Electron desktop app
-npm run electron:dev
 ```
 
-## How It Works
+Open <http://localhost:5173> → Click **Host Session** → Start coding!
 
-### Host a Session
+## 🔧 Configuration
 
-1. Run `npm run dev`
-2. Click "Host Session"
-3. Share your IP address with collaborators
+### AI API Keys
 
-### Join a Session
+Add your API keys in the Settings panel:
 
-1. Get the host's IP (e.g., `192.168.1.x:3001`)
-2. Click "Join Session"
-3. Enter the IP and your name
+- **OpenAI** (GPT-4o for Devil's Advocate)
+- **Anthropic** (Claude 3.5 for Architect & Security Guard)
+- **Google** (Gemini Pro for Historian)
+- **Mistral** (for Scribe)
+- **DeepSeek** (for Intern)
 
-## Architecture
+### Environment Variables
 
-```
-/hivemind-local
-├── /packages
-│   ├── /client       # React + Vite + Monaco
-│   └── /server       # Node.js + Socket.io + SQLite
-├── /electron         # Desktop wrapper
-└── /projects         # Local project files
+```bash
+PORT=3001  # Server port
 ```
 
-## Features
+## 🎯 Keyboard Shortcuts
 
-- 🐝 **6 AI Agents** - Architect, Devil's Advocate, Historian, Scribe, Security, Intern
-- 📝 **Monaco Editor** - Same as VS Code
-- 🔥 **Real-time Collaboration** - Yjs CRDT sync
-- 💬 **Team Chat** - Socket.io based
-- 📁 **Local File System** - No cloud required
-- 💾 **SQLite Database** - API keys, budget, history
+| Shortcut | Action |
+|----------|--------|
+| Ctrl+S | Save file |
+| Ctrl+P | Quick search |
+| Ctrl+Shift+P | Command palette |
+| Ctrl+` | Toggle terminal |
+| Ctrl+B | Toggle sidebar |
 
-## License
+## 📦 Tech Stack
 
-MIT
+- **Frontend**: React + Vite + TypeScript
+- **Editor**: Monaco Editor
+- **Backend**: Express + Socket.io
+- **Collaboration**: Yjs
+- **Database**: SQLite (API keys, sessions)
+- **Styling**: CSS Variables + Themes
+
+## 🤝 Contributing
+
+1. Fork the repo
+2. Create a feature branch
+3. Make your changes
+4. Submit a PR
+
+## 📄 License
+
+MIT License - see [LICENSE](./LICENSE)
+
+---
+
+Built with ❤️ for developers who love coding together.

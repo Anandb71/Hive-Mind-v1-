@@ -1,7 +1,21 @@
 {
-	"name": "hivemind",
-	"version": "0.1.0",
-	"description": "HiveMind - Local-First Multiplayer IDE",
+	"name": "hivemind-ide",
+	"version": "0.2.0",
+	"description": "HiveMind - Local-First Multiplayer IDE with AI Agents",
+	"author": "HiveMind Team",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/Anandb71/Hive-Mind-v1.git"
+	},
+	"keywords": [
+		"ide",
+		"multiplayer",
+		"collaborative",
+		"ai-agents",
+		"local-first",
+		"monaco-editor"
+	],
 	"private": true,
 	"workspaces": [
 		"packages/*"
