@@ -51,6 +51,13 @@ interface AppState {
 	fileContents: Record<string, string>;
 	setFileContent: (path: string, content: string) => void;
 
+	// Tabs
+	openTabs: string[];
+	dirtyFiles: Set<string>;
+	openTab: (path: string) => void;
+	closeTab: (path: string) => void;
+	markDirty: (path: string, dirty: boolean) => void;
+
 	// UI
 	sidebarPanel: 'agents' | 'session' | 'files' | 'settings' | 'git';
 	setSidebarPanel: (panel: 'agents' | 'session' | 'files' | 'settings' | 'git') => void;
@@ -93,6 +100,35 @@ export const useStore = create<AppState>((set) => ({
 	setFileContent: (path, content) => set((state) => ({
 		fileContents: { ...state.fileContents, [path]: content }
 	})),
+
+	// Tabs
+	openTabs: [],
+	dirtyFiles: new Set<string>(),
+	openTab: (path) => set((state) => ({
+		openTabs: state.openTabs.includes(path) ? state.openTabs : [...state.openTabs, path],
+		activeFile: path
+	})),
+	closeTab: (path) => set((state) => {
+		const newTabs = state.openTabs.filter(t => t !== path);
+		const newDirty = new Set(state.dirtyFiles);
+		newDirty.delete(path);
+		return {
+			openTabs: newTabs,
+			dirtyFiles: newDirty,
+			activeFile: state.activeFile === path
+				? (newTabs.length > 0 ? newTabs[newTabs.length - 1] : null)
+				: state.activeFile
+		};
+	}),
+	markDirty: (path, dirty) => set((state) => {
+		const newDirty = new Set(state.dirtyFiles);
+		if (dirty) {
+			newDirty.add(path);
+		} else {
+			newDirty.delete(path);
+		}
+		return { dirtyFiles: newDirty };
+	}),
 
 	// UI
 	sidebarPanel: 'files',

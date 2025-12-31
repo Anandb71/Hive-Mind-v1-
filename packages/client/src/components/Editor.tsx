@@ -1,12 +1,17 @@
 import { useEffect, useState, useRef } from 'react';
 import MonacoEditor, { OnMount } from '@monaco-editor/react';
 import { useStore } from '../store';
+import { X } from 'lucide-react';
 
 export function Editor() {
-	const { activeFile, fileContents, setFileContent, serverUrl, session } = useStore();
+	const {
+		activeFile, fileContents, setFileContent, serverUrl, session,
+		openTabs, dirtyFiles, openTab, closeTab, markDirty, setActiveFile
+	} = useStore();
 	const [content, setContent] = useState('');
 	const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
 	const editorRef = useRef<any>(null);
+	const saveTimeoutRef = useRef<number | null>(null);
 
 	useEffect(() => {
 		if (activeFile) {
@@ -34,8 +39,6 @@ export function Editor() {
 
 	const handleEditorMount: OnMount = (editor) => {
 		editorRef.current = editor;
-
-		// Track cursor position
 		editor.onDidChangeCursorPosition((e) => {
 			setCursorPosition({
 				line: e.position.lineNumber,
@@ -45,10 +48,18 @@ export function Editor() {
 	};
 
 	const handleChange = (value: string | undefined) => {
-		if (value !== undefined) {
+		if (value !== undefined && activeFile) {
 			setContent(value);
-			setFileContent(activeFile!, value);
-			saveFile(value);
+			setFileContent(activeFile, value);
+			markDirty(activeFile, true);
+
+			// Debounced auto-save
+			if (saveTimeoutRef.current) {
+				clearTimeout(saveTimeoutRef.current);
+			}
+			saveTimeoutRef.current = setTimeout(() => {
+				saveFile(value);
+			}, 1000);
 		}
 	};
 
@@ -61,6 +72,7 @@ export function Editor() {
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ content: value })
 			});
+			markDirty(activeFile, false);
 		} catch (err) {
 			console.error('Failed to save file:', err);
 		}
@@ -87,7 +99,16 @@ export function Editor() {
 		return langMap[ext || ''] || 'plaintext';
 	};
 
-	if (!activeFile) {
+	const handleTabClick = (path: string) => {
+		setActiveFile(path);
+	};
+
+	const handleTabClose = (e: React.MouseEvent, path: string) => {
+		e.stopPropagation();
+		closeTab(path);
+	};
+
+	if (!activeFile && openTabs.length === 0) {
 		return (
 			<div className="editor-container">
 				<div className="editor-empty">
@@ -105,32 +126,45 @@ export function Editor() {
 	return (
 		<div className="editor-container">
 			<div className="editor-tabs">
-				<div className="tab active">
-					<span>📄</span>
-					<span>{activeFile.split('/').pop()}</span>
-					<span className="tab-close">×</span>
-				</div>
+				{openTabs.map(path => (
+					<div
+						key={path}
+						className={`tab ${activeFile === path ? 'active' : ''}`}
+						onClick={() => handleTabClick(path)}
+					>
+						<span className="tab-icon">📄</span>
+						<span className="tab-name">
+							{dirtyFiles.has(path) && <span className="dirty-dot">●</span>}
+							{path.split('/').pop()}
+						</span>
+						<button className="tab-close" onClick={(e) => handleTabClose(e, path)}>
+							<X size={12} />
+						</button>
+					</div>
+				))}
 			</div>
 
 			<div className="editor-content">
-				<MonacoEditor
-					height="100%"
-					language={getLanguage(activeFile)}
-					theme="vs-dark"
-					value={content}
-					onChange={handleChange}
-					onMount={handleEditorMount}
-					options={{
-						fontSize: 14,
-						fontFamily: "'Cascadia Code', 'Fira Code', Consolas, monospace",
-						minimap: { enabled: true },
-						scrollBeyondLastLine: false,
-						cursorBlinking: 'smooth',
-						smoothScrolling: true,
-						padding: { top: 16 },
-						automaticLayout: true
-					}}
-				/>
+				{activeFile && (
+					<MonacoEditor
+						height="100%"
+						language={getLanguage(activeFile)}
+						theme="vs-dark"
+						value={content}
+						onChange={handleChange}
+						onMount={handleEditorMount}
+						options={{
+							fontSize: 14,
+							fontFamily: "'Cascadia Code', 'Fira Code', Consolas, monospace",
+							minimap: { enabled: true },
+							scrollBeyondLastLine: false,
+							cursorBlinking: 'smooth',
+							smoothScrolling: true,
+							padding: { top: 16 },
+							automaticLayout: true
+						}}
+					/>
+				)}
 
 				{session?.participants.filter(p => p.cursor).map(p => (
 					<div
@@ -150,7 +184,7 @@ export function Editor() {
 			<div className="status-bar">
 				<div className="status-item">🐝 HiveMind</div>
 				{session && <div className="status-item">🔥 {session.participants.length} online</div>}
-				<div className="status-item">{getLanguage(activeFile)}</div>
+				{activeFile && <div className="status-item">{getLanguage(activeFile)}</div>}
 				<div className="status-item right">Ln {cursorPosition.line}, Col {cursorPosition.column}</div>
 			</div>
 		</div>
