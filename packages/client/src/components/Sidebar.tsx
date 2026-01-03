@@ -60,6 +60,31 @@ export function Sidebar({ onToggleTerminal }: SidebarProps) {
 		setLoading(null);
 	};
 
+	const getTemplateForExtension = (filename: string): string => {
+		const ext = filename.split('.').pop()?.toLowerCase() || '';
+		const name = filename.replace(/\.[^.]+$/, '');
+
+		const templates: Record<string, string> = {
+			py: `# ${filename}\n\ndef main():\n    print("Hello, World!")\n\nif __name__ == "__main__":\n    main()\n`,
+			html: `<!DOCTYPE html>\n<html lang="en">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <title>${name}</title>\n</head>\n<body>\n    <h1>Hello, World!</h1>\n</body>\n</html>\n`,
+			css: `/* ${filename} */\n\n* {\n    margin: 0;\n    padding: 0;\n    box-sizing: border-box;\n}\n`,
+			json: `{\n    "name": "${name}",\n    "version": "1.0.0"\n}\n`,
+			md: `# ${name}\n\nDescription goes here.\n`,
+			go: `// ${filename}\npackage main\n\nimport "fmt"\n\nfunc main() {\n    fmt.Println("Hello, World!")\n}\n`,
+			rs: `// ${filename}\n\nfn main() {\n    println!("Hello, World!");\n}\n`,
+			java: `// ${filename}\n\npublic class ${name} {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}\n`,
+			c: `// ${filename}\n\n#include <stdio.h>\n\nint main() {\n    printf("Hello, World!\\n");\n    return 0;\n}\n`,
+			cpp: `// ${filename}\n\n#include <iostream>\n\nint main() {\n    std::cout << "Hello, World!" << std::endl;\n    return 0;\n}\n`,
+			sh: `#!/bin/bash\n# ${filename}\n\necho "Hello, World!"\n`,
+			sql: `-- ${filename}\n\nSELECT 'Hello, World!';\n`,
+			yaml: `# ${filename}\n\nname: ${name}\nversion: 1.0.0\n`,
+			yml: `# ${filename}\n\nname: ${name}\nversion: 1.0.0\n`,
+			xml: `<?xml version="1.0" encoding="UTF-8"?>\n<!-- ${filename} -->\n<root>\n    <message>Hello, World!</message>\n</root>\n`,
+		};
+
+		return templates[ext] || `// ${filename}\n`;
+	};
+
 	const handleCreate = async () => {
 		if (!newFileName.trim()) return;
 
@@ -75,11 +100,12 @@ export function Sidebar({ onToggleTerminal }: SidebarProps) {
 					body: JSON.stringify({ content: '' })
 				});
 			} else {
-				// Create file
+				// Create file with smart template
+				const content = getTemplateForExtension(newFileName);
 				res = await fetch(`${serverUrl}/api/files/create/${projectName}/${newFileName}`, {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ content: `// ${newFileName}\n` })
+					body: JSON.stringify({ content })
 				});
 			}
 
