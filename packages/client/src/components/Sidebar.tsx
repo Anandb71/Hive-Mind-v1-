@@ -18,11 +18,13 @@ interface SidebarProps {
 }
 
 export function Sidebar({ onToggleTerminal }: SidebarProps) {
-	const { sidebarPanel, setSidebarPanel, files, activeFile, openTab, session, budget, spent, toggleChat, serverUrl } = useStore();
+	const { sidebarPanel, setSidebarPanel, files, setFiles, activeFile, openTab, session, budget, spent, toggleChat, serverUrl } = useStore();
 	const [activeAgent, setActiveAgent] = useState<string | null>(null);
 	const [agentInput, setAgentInput] = useState('');
 	const [agentResponses, setAgentResponses] = useState<Record<string, string>>({});
 	const [loading, setLoading] = useState<string | null>(null);
+	const [showCreateDialog, setShowCreateDialog] = useState<'file' | 'folder' | null>(null);
+	const [newFileName, setNewFileName] = useState('');
 
 	const askAgent = async (agentId: string) => {
 		if (!agentInput.trim()) return;
@@ -56,6 +58,51 @@ export function Sidebar({ onToggleTerminal }: SidebarProps) {
 
 		setAgentInput('');
 		setLoading(null);
+	};
+
+	const handleCreate = async () => {
+		if (!newFileName.trim()) return;
+
+		const projectName = 'my-project';
+
+		try {
+			let res;
+			if (showCreateDialog === 'folder') {
+				// Create folder by creating a placeholder file inside it
+				res = await fetch(`${serverUrl}/api/files/create/${projectName}/${newFileName}/.gitkeep`, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ content: '' })
+				});
+			} else {
+				// Create file
+				res = await fetch(`${serverUrl}/api/files/create/${projectName}/${newFileName}`, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ content: `// ${newFileName}\n` })
+				});
+			}
+
+			if (res.ok) {
+				// Refresh file tree
+				const treeRes = await fetch(`${serverUrl}/api/files/tree/${projectName}`);
+				if (treeRes.ok) {
+					const treeData = await treeRes.json();
+					setFiles(treeData);
+				}
+				// Open the new file
+				if (showCreateDialog === 'file') {
+					openTab(newFileName);
+				}
+			} else {
+				console.error('Create failed:', await res.text());
+			}
+		} catch (err) {
+			console.error('Failed to create:', err);
+		}
+
+		setShowCreateDialog(null);
+		setNewFileName('');
 	};
 
 	const renderFileTree = (nodes: any[], depth = 0) => {
@@ -109,9 +156,29 @@ export function Sidebar({ onToggleTerminal }: SidebarProps) {
 				<div className="panel-content">
 					{sidebarPanel === 'files' && (
 						<>
-							<div className="section-title">Explorer</div>
+							<div className="section-title">
+								Explorer
+								<div className="explorer-actions">
+									<button onClick={() => setShowCreateDialog('file')} title="New File">+📄</button>
+									<button onClick={() => setShowCreateDialog('folder')} title="New Folder">+📁</button>
+								</div>
+							</div>
+							{showCreateDialog && (
+								<div className="create-dialog">
+									<input
+										type="text"
+										placeholder={showCreateDialog === 'file' ? 'filename.ts' : 'folder-name'}
+										value={newFileName}
+										onChange={e => setNewFileName(e.target.value)}
+										onKeyPress={e => e.key === 'Enter' && handleCreate()}
+										autoFocus
+									/>
+									<button onClick={handleCreate}>Create</button>
+									<button onClick={() => { setShowCreateDialog(null); setNewFileName(''); }}>Cancel</button>
+								</div>
+							)}
 							{files.length > 0 ? renderFileTree(files) : (
-								<div className="empty-message">No files yet. Create a project to get started.</div>
+								<div className="empty-message">No files yet. Click +📄 to create a file.</div>
 							)}
 						</>
 					)}
