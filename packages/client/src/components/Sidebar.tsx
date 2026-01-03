@@ -200,6 +200,31 @@ export function Sidebar({ onToggleTerminal }: SidebarProps) {
 		setRenameValue('');
 	};
 
+	const handleDuplicate = async (path: string) => {
+		try {
+			const readRes = await fetch(`${serverUrl}/api/files/content/my-project/${path}`);
+			if (!readRes.ok) return;
+			const { content } = await readRes.json();
+
+			// Generate new filename with _copy suffix
+			const ext = path.includes('.') ? '.' + path.split('.').pop() : '';
+			const baseName = path.replace(ext, '');
+			const newPath = `${baseName}_copy${ext}`;
+
+			await fetch(`${serverUrl}/api/files/create/my-project/${newPath}`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ content })
+			});
+
+			await refreshFiles();
+			openTab(newPath);
+		} catch (err) {
+			console.error('Duplicate failed:', err);
+		}
+		setContextMenu(null);
+	};
+
 	const handleContextMenu = (e: React.MouseEvent, path: string, type: string) => {
 		e.preventDefault();
 		setContextMenu({ x: e.clientX, y: e.clientY, path, type });
@@ -388,6 +413,11 @@ export function Sidebar({ onToggleTerminal }: SidebarProps) {
 					}}>
 						✏️ Rename
 					</div>
+					{contextMenu.type === 'file' && (
+						<div className="context-menu-item" onClick={() => handleDuplicate(contextMenu.path)}>
+							📋 Duplicate
+						</div>
+					)}
 					<div className="context-menu-item delete" onClick={() => handleDelete(contextMenu.path)}>
 						🗑️ Delete
 					</div>
