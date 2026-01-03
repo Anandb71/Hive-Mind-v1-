@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Bug, Flame, FolderOpen, Settings, MessageCircle, Send, GitBranch, Terminal } from 'lucide-react';
 import { useStore } from '../store';
 import { GitPanel } from './GitPanel';
@@ -28,6 +28,15 @@ export function Sidebar({ onToggleTerminal }: SidebarProps) {
 	const [contextMenu, setContextMenu] = useState<{ x: number; y: number; path: string; type: string } | null>(null);
 	const [renameTarget, setRenameTarget] = useState<string | null>(null);
 	const [renameValue, setRenameValue] = useState('');
+
+	// Close context menu when clicking outside
+	useEffect(() => {
+		const handleClickOutside = () => setContextMenu(null);
+		if (contextMenu) {
+			document.addEventListener('click', handleClickOutside);
+			return () => document.removeEventListener('click', handleClickOutside);
+		}
+	}, [contextMenu]);
 
 	const askAgent = async (agentId: string) => {
 		if (!agentInput.trim()) return;
