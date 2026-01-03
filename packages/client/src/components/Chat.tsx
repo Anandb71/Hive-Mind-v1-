@@ -19,9 +19,18 @@ export function Chat() {
 	const messagesRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
-		// Connect to chat
 		const socket = io(serverUrl);
 		socketRef.current = socket;
+
+		// Join the session room for chat
+		if (session?.id) {
+			socket.emit('join-session', {
+				sessionId: session.id,
+				userId: user.id,
+				userName: user.name,
+				color: user.color
+			});
+		}
 
 		socket.on('chat-message', (message: Message) => {
 			setMessages(prev => [...prev, message]);
@@ -30,10 +39,9 @@ export function Chat() {
 		return () => {
 			socket.disconnect();
 		};
-	}, [serverUrl]);
+	}, [serverUrl, session?.id, user]);
 
 	useEffect(() => {
-		// Scroll to bottom on new messages
 		if (messagesRef.current) {
 			messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
 		}
@@ -66,12 +74,12 @@ export function Chat() {
 
 			<div className="chat-messages" ref={messagesRef}>
 				{messages.length === 0 && (
-					<div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: 20 }}>
+					<div className="chat-empty">
 						No messages yet. Say hi! 👋
 					</div>
 				)}
 				{messages.map(msg => (
-					<div key={msg.id} className="chat-message">
+					<div key={msg.id} className={`chat-message ${msg.userId === user.id ? 'own' : ''}`}>
 						<div className="chat-sender">
 							{msg.userName} • {formatTime(msg.timestamp)}
 						</div>
@@ -81,27 +89,16 @@ export function Chat() {
 			</div>
 
 			<div className="chat-input-area">
-				<div style={{ display: 'flex', gap: 8 }}>
-					<input
-						className="chat-input"
-						value={input}
-						onChange={e => setInput(e.target.value)}
-						onKeyPress={e => e.key === 'Enter' && sendMessage()}
-						placeholder="Type a message..."
-					/>
-					<button
-						onClick={sendMessage}
-						style={{
-							padding: '0 12px',
-							background: 'var(--accent)',
-							border: 'none',
-							borderRadius: 6,
-							cursor: 'pointer'
-						}}
-					>
-						<Send size={16} color="#000" />
-					</button>
-				</div>
+				<input
+					className="chat-input"
+					value={input}
+					onChange={e => setInput(e.target.value)}
+					onKeyPress={e => e.key === 'Enter' && sendMessage()}
+					placeholder="Type a message..."
+				/>
+				<button className="chat-send-btn" onClick={sendMessage} title="Send message">
+					<Send size={16} />
+				</button>
 			</div>
 		</div>
 	);
