@@ -25,6 +25,9 @@ export function Sidebar({ onToggleTerminal }: SidebarProps) {
 	const [loading, setLoading] = useState<string | null>(null);
 	const [showCreateDialog, setShowCreateDialog] = useState<'file' | 'folder' | null>(null);
 	const [newFileName, setNewFileName] = useState('');
+	const [contextMenu, setContextMenu] = useState<{ x: number; y: number; path: string; type: string } | null>(null);
+	const [renameTarget, setRenameTarget] = useState<string | null>(null);
+	const [renameValue, setRenameValue] = useState('');
 
 	const askAgent = async (agentId: string) => {
 		if (!agentInput.trim()) return;
@@ -131,6 +134,68 @@ export function Sidebar({ onToggleTerminal }: SidebarProps) {
 		setNewFileName('');
 	};
 
+	const refreshFiles = async () => {
+		const treeRes = await fetch(`${serverUrl}/api/files/tree/my-project`);
+		if (treeRes.ok) {
+			const treeData = await treeRes.json();
+			setFiles(treeData);
+		}
+	};
+
+	const handleDelete = async (path: string) => {
+		if (!confirm(`Delete "${path}"?`)) return;
+
+		try {
+			const res = await fetch(`${serverUrl}/api/files/delete/my-project/${path}`, {
+				method: 'DELETE'
+			});
+			if (res.ok) {
+				await refreshFiles();
+			}
+		} catch (err) {
+			console.error('Delete failed:', err);
+		}
+		setContextMenu(null);
+	};
+
+	const handleRename = async () => {
+		if (!renameTarget || !renameValue.trim()) return;
+
+		// Read old file content
+		try {
+			const readRes = await fetch(`${serverUrl}/api/files/content/my-project/${renameTarget}`);
+			if (!readRes.ok) return;
+			const { content } = await readRes.json();
+
+			// Create new file with new name
+			const dir = renameTarget.includes('/') ? renameTarget.substring(0, renameTarget.lastIndexOf('/') + 1) : '';
+			const newPath = dir + renameValue;
+
+			await fetch(`${serverUrl}/api/files/create/my-project/${newPath}`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ content })
+			});
+
+			// Delete old file
+			await fetch(`${serverUrl}/api/files/delete/my-project/${renameTarget}`, {
+				method: 'DELETE'
+			});
+
+			await refreshFiles();
+		} catch (err) {
+			console.error('Rename failed:', err);
+		}
+
+		setRenameTarget(null);
+		setRenameValue('');
+	};
+
+	const handleContextMenu = (e: React.MouseEvent, path: string, type: string) => {
+		e.preventDefault();
+		setContextMenu({ x: e.clientX, y: e.clientY, path, type });
+	};
+
 	const renderFileTree = (nodes: any[], depth = 0) => {
 		return nodes.map(node => (
 			<div key={node.path}>
@@ -138,6 +203,7 @@ export function Sidebar({ onToggleTerminal }: SidebarProps) {
 					className={`file-item ${node.type === 'directory' ? 'directory' : ''} ${activeFile === node.path ? 'active' : ''}`}
 					style={{ paddingLeft: 12 + depth * 12 }}
 					onClick={() => node.type === 'file' && openTab(node.path)}
+					onContextMenu={(e) => handleContextMenu(e, node.path, node.type)}
 				>
 					{node.type === 'directory' ? '📁' : '📄'} {node.name}
 				</div>
@@ -299,6 +365,43 @@ export function Sidebar({ onToggleTerminal }: SidebarProps) {
 					{sidebarPanel === 'settings' && <ApiKeySettings />}
 				</div>
 			</div>
+
+			{contextMenu && (
+				<div
+					className="context-menu"
+					style={{ top: contextMenu.y, left: contextMenu.x }}
+					onClick={() => setContextMenu(null)}
+				>
+					<div className="context-menu-item" onClick={() => {
+						setRenameTarget(contextMenu.path);
+						setRenameValue(contextMenu.path.split('/').pop() || '');
+						setContextMenu(null);
+					}}>
+						✏️ Rename
+					</div>
+					<div className="context-menu-item delete" onClick={() => handleDelete(contextMenu.path)}>
+						🗑️ Delete
+					</div>
+				</div>
+			)}
+
+			{renameTarget && (
+				<div className="rename-overlay" onClick={() => setRenameTarget(null)}>
+					<div className="rename-dialog" onClick={e => e.stopPropagation()}>
+						<h3>Rename</h3>
+						<input
+							value={renameValue}
+							onChange={e => setRenameValue(e.target.value)}
+							onKeyPress={e => e.key === 'Enter' && handleRename()}
+							autoFocus
+						/>
+						<div className="rename-buttons">
+							<button onClick={handleRename}>Rename</button>
+							<button onClick={() => setRenameTarget(null)}>Cancel</button>
+						</div>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }
