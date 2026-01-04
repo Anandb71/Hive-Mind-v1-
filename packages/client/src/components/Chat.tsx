@@ -15,8 +15,11 @@ export function Chat() {
 	const { toggleChat, serverUrl, user, session } = useStore();
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [input, setInput] = useState('');
+	const [showMentions, setShowMentions] = useState(false);
+	const [mentionFilter, setMentionFilter] = useState('');
 	const socketRef = useRef<Socket | null>(null);
 	const messagesRef = useRef<HTMLDivElement>(null);
+	const inputRef = useRef<HTMLInputElement>(null);
 
 	useEffect(() => {
 		const socket = io(serverUrl);
@@ -65,6 +68,33 @@ export function Chat() {
 		return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 	};
 
+	const handleInputChange = (value: string) => {
+		setInput(value);
+		// Check if user is typing @mention
+		const atIndex = value.lastIndexOf('@');
+		if (atIndex !== -1 && (atIndex === 0 || value[atIndex - 1] === ' ')) {
+			const afterAt = value.substring(atIndex + 1);
+			if (!afterAt.includes(' ')) {
+				setShowMentions(true);
+				setMentionFilter(afterAt.toLowerCase());
+				return;
+			}
+		}
+		setShowMentions(false);
+	};
+
+	const filteredParticipants = session?.participants.filter(p =>
+		p.name.toLowerCase().includes(mentionFilter) && p.id !== user.id
+	) || [];
+
+	const selectMention = (name: string) => {
+		const atIndex = input.lastIndexOf('@');
+		const newInput = input.substring(0, atIndex) + '@' + name + ' ';
+		setInput(newInput);
+		setShowMentions(false);
+		inputRef.current?.focus();
+	};
+
 	return (
 		<div className="chat-panel">
 			<div className="chat-header">
@@ -89,12 +119,27 @@ export function Chat() {
 			</div>
 
 			<div className="chat-input-area">
+				{showMentions && filteredParticipants.length > 0 && (
+					<div className="mention-suggestions">
+						{filteredParticipants.map(p => (
+							<div
+								key={p.id}
+								className="mention-item"
+								onClick={() => selectMention(p.name)}
+							>
+								<span className="mention-avatar" style={{ background: p.color }}>{p.name[0]}</span>
+								<span>{p.name}</span>
+							</div>
+						))}
+					</div>
+				)}
 				<input
+					ref={inputRef}
 					className="chat-input"
 					value={input}
-					onChange={e => setInput(e.target.value)}
+					onChange={e => handleInputChange(e.target.value)}
 					onKeyPress={e => e.key === 'Enter' && sendMessage()}
-					placeholder="Type a message..."
+					placeholder="Type @ to mention..."
 				/>
 				<button className="chat-send-btn" onClick={sendMessage} title="Send message">
 					<Send size={16} />
