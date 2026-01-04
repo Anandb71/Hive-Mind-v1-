@@ -11,6 +11,25 @@
 	min-width: 0;
 }
 
+/* Light Theme Override */
+[data-theme="light"] {
+	--bg-primary: #ffffff;
+	--bg-secondary: #f5f5f5;
+	--bg-tertiary: #e8e8e8;
+	--text-primary: #1a1a1a;
+	--text-secondary: #666666;
+	--border: #d0d0d0;
+	--accent: #fbbf24;
+}
+
+[data-theme="light"] .monaco-editor {
+	background: #ffffff !important;
+}
+
+[data-theme="light"] .monaco-editor .margin {
+	background: #f5f5f5 !important;
+}
+
 /* Sidebar */
 .sidebar {
 	display: flex;

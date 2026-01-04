@@ -13,7 +13,7 @@ import { QuickOpen } from './QuickOpen';
 import './IDE.css';
 
 export function IDE() {
-	const { serverUrl, setFiles, chatOpen } = useStore();
+	const { serverUrl, setFiles, chatOpen, theme, setTheme, sidebarWidth } = useStore();
 	const [terminalOpen, setTerminalOpen] = useState(true);
 	const [quickOpenOpen, setQuickOpenOpen] = useState(false);
 	const [shortcutsOpen, setShortcutsOpen] = useState(false);
@@ -21,6 +21,11 @@ export function IDE() {
 	useEffect(() => {
 		loadProjects();
 	}, [serverUrl]);
+
+	// Apply theme to document
+	useEffect(() => {
+		document.documentElement.setAttribute('data-theme', theme);
+	}, [theme]);
 
 	// Global keyboard shortcuts
 	useEffect(() => {
