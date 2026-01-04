@@ -133,4 +133,3 @@ export function FileOps({ onRefresh }: FileOpsProps) {
 	);
 }
 
-export { deleteFile };

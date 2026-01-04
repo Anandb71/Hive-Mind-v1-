@@ -37,13 +37,20 @@ export function Editor() {
 		}
 	};
 
-	const handleEditorMount: OnMount = (editor) => {
+	const handleEditorMount: OnMount = (editor, monaco) => {
 		editorRef.current = editor;
 		editor.onDidChangeCursorPosition((e) => {
 			setCursorPosition({
 				line: e.position.lineNumber,
 				column: e.position.column
 			});
+		});
+
+		// Ctrl+S to save
+		editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+			if (activeFile) {
+				saveFile(content);
+			}
 		});
 	};
 
@@ -144,6 +151,22 @@ export function Editor() {
 				))}
 			</div>
 
+			{activeFile && (
+				<div className="breadcrumb">
+					{activeFile.split('/').map((segment, i, arr) => (
+						<>
+							<span
+								key={i}
+								className={`breadcrumb-item ${i === arr.length - 1 ? 'current' : ''}`}
+							>
+								{segment}
+							</span>
+							{i < arr.length - 1 && <span className="breadcrumb-separator">›</span>}
+						</>
+					))}
+				</div>
+			)}
+
 			<div className="editor-content">
 				{activeFile && (
 					<MonacoEditor
@@ -156,12 +179,24 @@ export function Editor() {
 						options={{
 							fontSize: 14,
 							fontFamily: "'Cascadia Code', 'Fira Code', Consolas, monospace",
-							minimap: { enabled: true },
+							minimap: { enabled: true, scale: 1 },
 							scrollBeyondLastLine: false,
 							cursorBlinking: 'smooth',
 							smoothScrolling: true,
 							padding: { top: 16 },
-							automaticLayout: true
+							automaticLayout: true,
+							wordWrap: 'on',
+							lineNumbers: 'on',
+							folding: true,
+							foldingHighlight: true,
+							bracketPairColorization: { enabled: true },
+							matchBrackets: 'always',
+							renderLineHighlight: 'all',
+							suggestOnTriggerCharacters: true,
+							quickSuggestions: true,
+							parameterHints: { enabled: true },
+							formatOnPaste: true,
+							formatOnType: true
 						}}
 					/>
 				)}
