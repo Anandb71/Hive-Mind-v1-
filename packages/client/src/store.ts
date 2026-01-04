@@ -63,6 +63,10 @@ interface AppState {
 	setSidebarPanel: (panel: 'agents' | 'session' | 'files' | 'settings' | 'git') => void;
 	chatOpen: boolean;
 	toggleChat: () => void;
+	theme: 'dark' | 'light';
+	setTheme: (theme: 'dark' | 'light') => void;
+	sidebarWidth: number;
+	setSidebarWidth: (width: number) => void;
 
 	// Budget
 	budget: number;
@@ -135,6 +139,16 @@ export const useStore = create<AppState>((set) => ({
 	setSidebarPanel: (panel) => set({ sidebarPanel: panel }),
 	chatOpen: false,
 	toggleChat: () => set((state) => ({ chatOpen: !state.chatOpen })),
+	theme: (localStorage.getItem('hivemind-theme') as 'dark' | 'light') || 'dark',
+	setTheme: (theme) => {
+		localStorage.setItem('hivemind-theme', theme);
+		set({ theme });
+	},
+	sidebarWidth: parseInt(localStorage.getItem('hivemind-sidebar-width') || '260'),
+	setSidebarWidth: (width) => {
+		localStorage.setItem('hivemind-sidebar-width', width.toString());
+		set({ sidebarWidth: width });
+	},
 
 	// Budget
 	budget: 5.00,
