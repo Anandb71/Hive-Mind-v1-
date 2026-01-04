@@ -13,7 +13,7 @@ import { QuickOpen } from './QuickOpen';
 import './IDE.css';
 
 export function IDE() {
-	const { serverUrl, setFiles, chatOpen, theme, setTheme, sidebarWidth } = useStore();
+	const { serverUrl, setFiles, chatOpen, theme, setTheme, sidebarWidth, setSidebarWidth } = useStore();
 	const [terminalOpen, setTerminalOpen] = useState(true);
 	const [quickOpenOpen, setQuickOpenOpen] = useState(false);
 	const [shortcutsOpen, setShortcutsOpen] = useState(false);
@@ -75,7 +75,27 @@ export function IDE() {
 
 	return (
 		<div className="ide">
-			<Sidebar onToggleTerminal={() => setTerminalOpen(!terminalOpen)} />
+			<div style={{ width: sidebarWidth, minWidth: 200, maxWidth: 500, position: 'relative' }}>
+				<Sidebar onToggleTerminal={() => setTerminalOpen(!terminalOpen)} />
+				<div
+					className="sidebar-resizer"
+					onMouseDown={(e) => {
+						e.preventDefault();
+						const startX = e.clientX;
+						const startWidth = sidebarWidth;
+						const onMouseMove = (e: MouseEvent) => {
+							const newWidth = Math.max(200, Math.min(500, startWidth + e.clientX - startX));
+							setSidebarWidth(newWidth);
+						};
+						const onMouseUp = () => {
+							document.removeEventListener('mousemove', onMouseMove);
+							document.removeEventListener('mouseup', onMouseUp);
+						};
+						document.addEventListener('mousemove', onMouseMove);
+						document.addEventListener('mouseup', onMouseUp);
+					}}
+				/>
+			</div>
 			<div className="ide-main">
 				<Editor />
 				{terminalOpen && <Terminal />}
